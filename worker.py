@@ -1,0 +1,29 @@
+import asyncio
+from temporalio.client import Client
+from temporalio.contrib.pydantic import pydantic_data_converter
+from temporalio.worker import Worker
+from workflows import DefectChainWorkflow
+from activities import analyze_defect, identify_root_causes, recommend_actions
+
+TASK_QUEUE = "prompt-chain-queue"
+
+
+async def main():
+    client = await Client.connect(
+        "localhost:7233",
+        data_converter=pydantic_data_converter,
+    )
+
+    worker = Worker(
+        client,
+        task_queue=TASK_QUEUE,
+        workflows=[DefectChainWorkflow],
+        activities=[analyze_defect, identify_root_causes, recommend_actions],
+    )
+
+    print(f"Worker listening on '{TASK_QUEUE}'...")
+    await worker.run()
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
